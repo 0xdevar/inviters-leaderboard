@@ -1,0 +1,34 @@
+name: Binary Build
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v2
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+
+      - name: Resolve Version
+        run: |
+          echo version=$(git tag | sort -V | tail -1) >> $GITHUB_ENV
+
+      - name: Installing Dependencies
+        run: bun i
+
+      - name: Build Binary
+        run: bun build --target=bun src/bot.ts --compile --sourcemap --outfile ./build/challenge-bot
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./build/challenge-bot
+          tag_name: ${{ env.version }}
