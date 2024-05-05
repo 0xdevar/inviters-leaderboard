@@ -1,3 +1,6 @@
+export {}
+
+declare global{
 interface User {
 	id: string;
 	username: string;
@@ -33,7 +36,8 @@ interface InviteDTO {
 	inviter?: User;
 }
 
+
 interface Invite {
 	code: string;
 	user?: User;
-}
+}}
