@@ -30,40 +30,13 @@ async function discordHitendpoint(url: string, method: string, body?: object): P
 	return response;
 }
 
-interface User {
-	id: string;
-	username: string;
-}
 
-interface Member {
-	user: User;
-	code?: string;
-	invitedBy?: string;
-}
-
-interface ActualMemberDTO {
-	user: User;
-}
-
-
-interface MemberDTO {
-	source_invite_code?: string;
-	join_source_type?: number;
-	inviter_id?: string;
-	member: ActualMemberDTO;
-}
-
-interface MemberSearchDTO {
-	guild_id: string;
-	members: MemberDTO[];
-	page_result_count: number;
-	total_result_count: number;
-}
 
 async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 	const endpoint = discordEndpoint(`guilds/${guildId}/members-search`);
 
 	const members: Member[] = [];
+
 	while (true) {
 		const payload = {
 			or_query: {},
@@ -71,8 +44,6 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 			limit: limit ?? 250,
 			after: { guild_joined_at: 1711345859879, user_id: "1217685432561565868" }
 		};
-
-
 
 		const response = await discordHitendpoint(endpoint, "POST", payload);
 
@@ -95,5 +66,28 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 		break;
 	}
 	return members;
+}
+
+async function getInvites(guildId: string): Promise<Invite[]> {
+	const endpoint = discordEndpoint(`guilds/${guildId}/invites`);
+
+	const response = await discordHitendpoint(endpoint, "GET");
+
+	if (response.status !== 200) {
+		throw new Error(`api error, response is not 200, it was ${response.status}`);
+	}
+
+	const invites = await response.json() as InviteDTO[];
+
+	const invitesOut: Invite[] = [];
+
+	for (const invite of invites) {
+		invitesOut.push({
+			code: invite.code,
+			user: invite.inviter,
+		} as Invite);
+	}
+
+	return invitesOut;
 }
 
