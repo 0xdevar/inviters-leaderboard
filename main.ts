@@ -37,16 +37,17 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 
 	const members: Member[] = [];
 
+	const payload: any = {
+		or_query: {},
+		and_query: {},
+		limit: limit ?? 250,
+	};
+	
+
+	let iteration = 0;
+
 	while (true) {
-		const payload = {
-			or_query: {},
-			and_query: {},
-			limit: limit ?? 250,
-			after: { guild_joined_at: 1711345859879, user_id: "1217685432561565868" }
-		};
-
 		const response = await discordHitendpoint(endpoint, "POST", payload);
-
 
 		if (response.status !== 200) {
 			throw new Error(`api error, response is not 200, it was ${response.status}`);
@@ -63,8 +64,24 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 			members.push(m);
 		}
 
-		break;
+		const lastMember = o.members.at(-1);
+		 
+		if (!lastMember) {
+			break;
+		}
+
+		const receieved = iteration++ * payload.limit;
+
+		if (receieved >= o.total_result_count) {
+			break;
+		}
+
+		const lastMemberId = lastMember.member.user.id;
+		const lastMemberJoinDate = lastMember.member.joined_at;
+
+		payload.after = { guild_joined_at: Date.parse(lastMemberJoinDate), user_id: lastMemberId };
 	}
+
 	return members;
 }
 
@@ -98,12 +115,12 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 
 	const members = await getMembers(guildId, limit);
 
-	const getUserFromInvite: (code: string) => User| undefined = (code: string) => {
+	const getUserFromInvite: (code: string) => User | undefined = (code: string) => {
 		return invites.find(invite => invite.code === code)?.user;
 	};
 
 	for (const member of members) {
-		let inviterId: string|undefined = member.invitedBy;
+		let inviterId: string | undefined = member.invitedBy;
 
 		if (!member.code && !member.invitedBy) {
 			continue;
@@ -127,4 +144,5 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 
 	return membersOut;
 }
+
 

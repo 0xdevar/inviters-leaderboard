@@ -20,6 +20,7 @@ declare global {
 
 	interface ActualMemberDTO {
 		user: User;
+		joined_at: string;
 	}
 
 
