@@ -91,3 +91,40 @@ async function getInvites(guildId: string): Promise<Invite[]> {
 	return invitesOut;
 }
 
+async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<InvitedMember[]> {
+	const membersOut = [] as InvitedMember[];
+
+	const invites = await getInvites(guildId);
+
+	const members = await getMembers(guildId, limit);
+
+	const getUserFromInvite: (code: string) => User| undefined = (code: string) => {
+		return invites.find(invite => invite.code === code)?.user;
+	};
+
+	for (const member of members) {
+		let inviterId: string|undefined = member.invitedBy;
+
+		if (!member.code && !member.invitedBy) {
+			continue;
+		}
+
+		if (member.code && !member.invitedBy) {
+			inviterId = getUserFromInvite(member.code)?.id;
+		}
+
+		if (!inviterId) {
+			continue;
+		}
+
+		membersOut.push({
+			code: member.code,
+			user: member.user,
+			invitedBy: inviterId,
+		} as InvitedMember);
+	}
+
+
+	return membersOut;
+}
+

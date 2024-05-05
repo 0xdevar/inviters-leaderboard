@@ -12,6 +12,12 @@ declare global {
 		invitedBy?: string;
 	}
 
+	interface InvitedMember {
+		user: User;
+		code: string;
+		invitedBy: string;
+	}
+
 	interface ActualMemberDTO {
 		user: User;
 	}
@@ -35,7 +41,6 @@ declare global {
 		code: string;
 		inviter?: User;
 	}
-
 
 	interface Invite {
 		code: string;
