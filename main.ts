@@ -191,3 +191,24 @@ async function getTopInviters(guildId: string, max: number): Promise<InviterMemb
 	return sortedInviters.slice(0, max);
 }
 
+
+async function sendMessage(channelId: string, content: string, embeds?: Embed): Promise<string> {
+	const endpoint = discordEndpoint(`/channels/${channelId}/messages`);
+
+	const payload = {
+		tts: false,
+		content,
+		embeds,
+	};
+
+	const response = await discordHitendpoint(endpoint, "POST", payload);
+
+	if (![200, 201].includes(response.status)) {
+		throw new Error(`api error, response is not [200,201], it was ${response.status}`);
+	}
+
+	const o = await response.json() as MessageCreateResponseDTO;
+
+	return o.id;
+}
+
