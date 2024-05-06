@@ -39,14 +39,17 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 
 	const members: Member[] = [];
 
+	const totalAllowedLimitByEndpoint = 1000;
+
+	const endpointLimit = Math.min(limit ?? totalAllowedLimitByEndpoint, totalAllowedLimitByEndpoint);
+
 	const payload: any = {
 		or_query: {},
 		and_query: {},
-		limit: limit ?? 250,
+		limit: endpointLimit,
 	};
 	
-
-	let iteration = 0;
+	let receieved = 0;
 
 	while (true) {
 		const response = await discordHitendpoint(endpoint, "POST", payload);
@@ -72,14 +75,26 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 			break;
 		}
 
-		const receieved = iteration++ * payload.limit;
+		receieved += o.page_result_count;
+
+		if (!limit) {
+			limit = o.total_result_count;
+		}
+
+		if (receieved >= limit) {
+			break;
+		}
 
 		if (receieved >= o.total_result_count) {
 			break;
 		}
 
+		const remaining = limit - receieved;
+		payload.limit = remaining;
+
 		const lastMemberId = lastMember.member.user.id;
 		const lastMemberJoinDate = lastMember.member.joined_at;
+
 
 		payload.after = { guild_joined_at: Date.parse(lastMemberJoinDate), user_id: lastMemberId };
 	}
