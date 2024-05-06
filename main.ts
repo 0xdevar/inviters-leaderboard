@@ -115,9 +115,9 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 
 	const members = await getMembers(guildId, limit);
 
-	const getUserFromInvite: (code: string) => User | undefined = (code: string) => {
+	function getUserFromInviteFromCode(code: string): undefined | User {
 		return invites.find(invite => invite.code === code)?.user;
-	};
+	}
 
 	for (const member of members) {
 		let inviterId: string | undefined = member.invitedBy;
@@ -127,7 +127,7 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 		}
 
 		if (member.code && !member.invitedBy) {
-			inviterId = getUserFromInvite(member.code)?.id;
+			inviterId = getUserFromInviteFromCode(member.code)?.id;
 		}
 
 		if (!inviterId) {
@@ -144,5 +144,4 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 
 	return membersOut;
 }
-
 
