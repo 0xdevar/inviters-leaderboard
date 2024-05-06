@@ -162,3 +162,19 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 	return membersOut;
 }
 
+function accoumlateInviters(members: InvitedMember[]): InviterMember[] {
+	const inviterMembers: InviterMember[] = [];
+	return inviterMembers;
+}
+
+async function getTopInviters(limit: number): Promise<InviterMember[]> {
+	const members = await getInvitedMembersOnly(GUILD_ID, limit)
+	const usersOut: InviterMember[] = [];
+
+
+
+
+
+	return usersOut;
+}
+
