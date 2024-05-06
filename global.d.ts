@@ -49,9 +49,8 @@ declare global {
 	}
 
 	interface InviterMember {
-		user: User;
+		userId: string;
 		membersJoinedCount: number;
-		codes: string[];
 	}
 }
 

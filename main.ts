@@ -48,7 +48,7 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 		and_query: {},
 		limit: endpointLimit,
 	};
-	
+
 	let receieved = 0;
 
 	while (true) {
@@ -70,7 +70,7 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 		}
 
 		const lastMember = o.members.at(-1);
-		 
+
 		if (!lastMember) {
 			break;
 		}
@@ -163,18 +163,31 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 }
 
 function accoumlateInviters(members: InvitedMember[]): InviterMember[] {
-	const inviterMembers: InviterMember[] = [];
+	const invitersMap: { [key: string]: number } = {};
+	const inviterMembers = members.reduce(function(results: InviterMember[], value: InvitedMember) {
+		const id = value.invitedBy.toString();
+		if (invitersMap[id] === undefined) {
+			results.push({
+				userId: id,
+				membersJoinedCount: 0,
+			} as InviterMember);
+			invitersMap[value.invitedBy] = results.length - 1;
+		}
+
+		results[invitersMap[id]].membersJoinedCount++;
+		return results;
+	}, []);
+
 	return inviterMembers;
 }
 
-async function getTopInviters(limit: number): Promise<InviterMember[]> {
-	const members = await getInvitedMembersOnly(GUILD_ID, limit)
-	const usersOut: InviterMember[] = [];
+async function getTopInviters(guildId: string, max: number): Promise<InviterMember[]> {
+	const members = await getInvitedMembersOnly(guildId);
+	const inviters = accoumlateInviters(members);
+
+	const sortedInviters = inviters.sort((b, a) => a.membersJoinedCount - b.membersJoinedCount);
 
 
-
-
-
-	return usersOut;
+	return sortedInviters.slice(0, max);
 }
 
