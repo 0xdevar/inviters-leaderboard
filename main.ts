@@ -31,7 +31,9 @@ async function discordHitendpoint(url: string, method: string, body?: object): P
 }
 
 
-
+// NOTE: This function grab all users from the server then add it
+// to an array on memory which might be unideal for big server with many many members
+// better to make this function as generator to load data on demand.
 async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 	const endpoint = discordEndpoint(`guilds/${guildId}/members-search`);
 
