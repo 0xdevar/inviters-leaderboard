@@ -248,3 +248,36 @@ async function deleteMessage(channelId: string, messageId: string): Promise<void
 	throw new Error(`api error, response is not [204], it was ${response.status}`);
 }
 
+async function SendTopInvitersMesssage() {
+	let description: string = ""
+	const topinviters = (await getTopInviters(GUILD_ID, 10)).forEach(inviter => {
+		description = description + `${inviter.userId}` + "\n"
+	})
+	
+	const author: EmbedAuthor = {
+		name: "Invites leaderboard",
+		icon_url: "https://cdn.discordapp.com/icons/942802258528198666/64ee7cadddcb9eac46a09cec3c1867e2.webp?size=4096"
+	}
+
+	const footer: EmbedFooter = {
+		text: "sss",
+		icon_url: "https://cdn.discordapp.com/icons/942802258528198666/64ee7cadddcb9eac46a09cec3c1867e2.webp?size=4096"
+	}
+	
+	const thumbnail: EmbedThumbnail = {
+		url: "https://media.discordapp.net/attachments/1043534660543713390/1237392744800976916/leaderboard.png?ex=663b7b4c&is=663a29cc&hm=4c144b8344e53508aac68821ccef27e674eedd8ef6f4435e70c3a73ae140ee4a&=&format=webp&quality=lossless&width=384&height=384",
+	}
+
+	const embed: Embed = {
+		type: "rich",
+		description: description,
+		color: 0xffffff,
+		footer: footer,
+		thumbnail: thumbnail,
+		author: author,
+  	};
+
+	sendMessage("1225289662776475658", "## : 📝👥 قائمة متصدرين الدعوات", embed);
+}
+
+SendTopInvitersMesssage()
