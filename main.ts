@@ -236,3 +236,15 @@ async function editMessage(channelId: string, messageId: string, { content, embe
 	return o.id;
 }
 
+async function deleteMessage(channelId: string, messageId: string): Promise<void> {
+	const endpoint = discordEndpoint(`/channels/${channelId}/messages/${messageId}`)
+
+	const response = await discordHitendpoint(endpoint, "DELETE");
+
+	if (response.status === 204) {
+		return;
+	}
+
+	throw new Error(`api error, response is not [204], it was ${response.status}`);
+}
+
