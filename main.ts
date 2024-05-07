@@ -212,3 +212,27 @@ async function sendMessage(channelId: string, content: string, embeds?: Embed): 
 	return o.id;
 }
 
+
+async function editMessage(channelId: string, messageId: string, { content, embeds }: { content: string, embeds?: Embed[] }): Promise<string> {
+	if (!content?.length || content.length > 200) {
+		throw new Error(`Message exceed the limit ${content.length}`);
+	}
+
+	const endpoint = discordEndpoint(`/channels/${channelId}/messages/${messageId}`);
+
+	const payload = {
+		content,
+		embeds
+	};
+
+	const response = await discordHitendpoint(endpoint, "PATCH", payload);
+
+	if (![200, 201].includes(response.status)) {
+		throw new Error(`api error, response is not [200,201], it was ${response.status}`);
+	}
+
+	const o = await response.json() as MessageCreateResponseDTO;
+
+	return o.id;
+}
+
