@@ -192,7 +192,7 @@ async function getTopInviters(guildId: string, max: number): Promise<InviterMemb
 }
 
 
-async function sendMessage(channelId: string, content: string, embeds?: Embed): Promise<string> {
+async function sendMessage(channelId: string, content?: string, embeds?: Embed[]): Promise<string> {
 	const endpoint = discordEndpoint(`/channels/${channelId}/messages`);
 
 	const payload = {
