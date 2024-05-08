@@ -1,7 +1,11 @@
 export { }; // NOTE: to ensure we can await in top level to supress ts-check
 
-function env(name: string) {
+function env(name: string, fallback?: string) {
 	const value = process.env[name];
+
+	if (!value && fallback) {
+		return fallback;
+	}
 
 	if (!value) {
 		throw new Error(`${name} is not set in the environment variable`);
@@ -13,6 +17,7 @@ function env(name: string) {
 const TOKEN = env("DISCORD_TOKEN");
 const GUILD_ID = env("GUILD_ID");
 const CHANNEL_ID = env("CHANNEL_ID");
+const INTERVAL = parseInt(env("POSTING_INTERVAL", "5")) * 1000;
 
 function discordEndpoint(url: string) {
 	const base = "https://discord.com/api/v9";
@@ -387,12 +392,10 @@ async function postMessageFromRandomTemplate() {
 	}
 }
 
-//	TODO: ensure to not show a member who already left
 //	TODO: ensure not to show the same user again
-//	TODO: ensure to make message object dynamiclly from a json file
 
 async function mainLoop() {
 	await postMessageFromRandomTemplate();
 }
 
-setInterval(mainLoop, 10000)
+setInterval(mainLoop, INTERVAL);
