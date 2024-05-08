@@ -118,5 +118,14 @@ declare global {
 		value: string;
 		inline?: boolean;
 	}
+
+	interface Template {
+		template: string;
+		type: "seq" | "random";
+		maxMembersCount?: number;
+		min?: number;
+		content?: string;
+		embeds?: Embed[];
+	}
 }
 

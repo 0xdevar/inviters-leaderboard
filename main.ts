@@ -12,10 +12,16 @@ function env(name: string) {
 
 const TOKEN = env("DISCORD_TOKEN");
 const GUILD_ID = env("GUILD_ID");
+const CHANNEL_ID = env("CHANNEL_ID");
 
 function discordEndpoint(url: string) {
 	const base = "https://discord.com/api/v9";
 	return `${base}/${url}`;
+}
+
+function getRandomElementFromArray<T>(array: T[]): undefined | T {
+	const randomIndex = Math.floor(Math.random() * array.length) % array.length;
+	return array[randomIndex]
 }
 
 async function discordHitendpoint(url: string, method: string, body?: object): Promise<Response> {
@@ -248,36 +254,145 @@ async function deleteMessage(channelId: string, messageId: string): Promise<void
 	throw new Error(`api error, response is not [204], it was ${response.status}`);
 }
 
-async function SendTopInvitersMesssage() {
-	let description: string = ""
-	const topinviters = (await getTopInviters(GUILD_ID, 10)).forEach(inviter => {
-		description = description + `${inviter.userId}` + "\n"
-	})
-	
-	const author: EmbedAuthor = {
-		name: "Invites leaderboard",
-		icon_url: "https://cdn.discordapp.com/icons/942802258528198666/64ee7cadddcb9eac46a09cec3c1867e2.webp?size=4096"
+async function getGuildMember(guildId: string, userId: string): Promise<Member> {
+	const endpoint = discordEndpoint(`/guilds/${guildId}/members/${userId}`)
+
+	const response = await discordHitendpoint(endpoint, "GET");
+
+	if (response.status !== 200) {
+		throw new Error(`api error, response is not [200], it was ${response.status}`);
 	}
 
-	const footer: EmbedFooter = {
-		text: "sss",
-		icon_url: "https://cdn.discordapp.com/icons/942802258528198666/64ee7cadddcb9eac46a09cec3c1867e2.webp?size=4096"
-	}
-	
-	const thumbnail: EmbedThumbnail = {
-		url: "https://media.discordapp.net/attachments/1043534660543713390/1237392744800976916/leaderboard.png?ex=663b7b4c&is=663a29cc&hm=4c144b8344e53508aac68821ccef27e674eedd8ef6f4435e70c3a73ae140ee4a&=&format=webp&quality=lossless&width=384&height=384",
-	}
+	const o = await response.json();
 
-	const embed: Embed = {
-		type: "rich",
-		description: description,
-		color: 0xffffff,
-		footer: footer,
-		thumbnail: thumbnail,
-		author: author,
-  	};
-
-	sendMessage("1225289662776475658", "## : 📝👥 قائمة متصدرين الدعوات", embed);
+	return o as Member;
 }
 
-SendTopInvitersMesssage()
+async function getJsonFile<T>(filePath: string): Promise<T> {
+	const f = Bun.file(filePath);
+	if (!await f.exists()) {
+		throw new Error(`File is not exist ${filePath}.`);
+	}
+
+	try {
+		const content = await f.json() as T;
+		return content;
+	} catch {
+		throw new Error(`Unable to parse json file ${filePath}`);
+	}
+}
+
+async function getMessageTemplates(): Promise<Template[]> {
+	const templates = await getJsonFile<Template[]>("./templates.json");
+	if (templates.length < 1) {
+		throw new Error("There is no message templates");
+	}
+	return templates;
+}
+
+async function getRandomTemplate(): Promise<Template> {
+	const templates = await getMessageTemplates();
+	return getRandomElementFromArray(templates)!;
+}
+
+async function postMessageSeq(template: Template) {
+	const count = template.maxMembersCount ?? 5;
+	const members = (await getTopInviters(GUILD_ID, count))
+		.map(m => ({ ...m, userId: `<@${m.userId}>` }));
+
+
+	const hydrate = (value: string, member: InviterMember) => {
+		return value.replace("{user}", member.userId)
+			.replace("{count}", member.membersJoinedCount.toString());
+	}
+
+
+	const renderTemplates = (() => {
+		const out = [];
+		for (let i = 0; i < count; i++) {
+			const member = members[i];
+			const renderedTemplate = hydrate(template.template, member);
+			out.push(renderedTemplate);
+		}
+		return out.join("\n");
+	});
+
+
+	const embeds = ((embeds) => {
+		if (!embeds) {
+			return
+		}
+		for (const e of embeds) {
+			e.description = e.description?.replace("{template}", renderTemplates);
+		}
+		return embeds
+	})(template.embeds);
+
+
+	sendMessage(CHANNEL_ID, template.content, embeds);
+}
+
+async function postMessageRandom(template: Template) {
+	const count = template.maxMembersCount ?? 5;
+	const members = (await getTopInviters(GUILD_ID, count))
+		.map(m => ({ ...m, userId: `<@${m.userId}>` }));
+
+	const min = (() => {
+		const min = template.min;
+		if (min && min > members[0].membersJoinedCount) {
+			return members[0].membersJoinedCount;
+		}
+		return template.min;
+	})();
+
+	let member: InviterMember | undefined;
+	do {
+		member = getRandomElementFromArray(members);
+		if (!member) {
+			break;
+		}
+	} while (min && member.membersJoinedCount < min);
+
+	if (!member) {
+		return;
+	}
+
+	const hydrate = (value: string) => {
+		return value.replace("{user}", member.userId)
+			.replace("{count}", member.membersJoinedCount.toString());
+	}
+
+	const renderedTemplate = hydrate(template.template);
+
+	const embeds = ((embeds) => {
+		if (!embeds) {
+			return
+		}
+		for (const e of embeds) {
+			e.description = e.description?.replace("{template}", renderedTemplate);
+		}
+		return embeds
+	})(template.embeds);
+
+	await sendMessage(CHANNEL_ID, template.content, embeds);
+}
+
+async function postMessageFromRandomTemplate() {
+	const template = await getRandomTemplate();
+
+	if (template.type === "seq") {
+		return postMessageSeq(template);
+	} else if (template.type === "random") {
+		return postMessageRandom(template);
+	}
+}
+
+//	TODO: ensure to not show a member who already left
+//	TODO: ensure not to show the same user again
+//	TODO: ensure to make message object dynamiclly from a json file
+
+async function mainLoop() {
+	await postMessageFromRandomTemplate();
+}
+
+setInterval(mainLoop, 10000)
