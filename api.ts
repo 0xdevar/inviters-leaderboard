@@ -205,7 +205,6 @@ export async function sendMessage(channelId: string, content?: string, embeds?: 
 		embeds,
 	};
 
-	console.log(payload)
 	const response = await discordHitendpoint(endpoint, "POST", payload);
 
 	if (![200, 201].includes(response.status)) {

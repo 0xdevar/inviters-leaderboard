@@ -79,7 +79,6 @@ async function postMessageRandom(template: Template) {
 			member = getRandomElementFromArray(topInviters);
 
 			if (!member) {
-				console.log("could not find any members", members.length)
 				break;
 			}
 
