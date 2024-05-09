@@ -4,7 +4,7 @@ import { env, randomColor } from "./utils.ts";
 
 const GUILD_ID = env("GUILD_ID");
 const CHANNEL_ID = env("CHANNEL_ID");
-const INTERVAL = parseInt(env("POSTING_INTERVAL", "5")) * 1000;
+const INTERVAL = parseInt(env("POSTING_INTERVAL", "360")) * (1000 * 60);
 
 const store: { [key: string]: any } = {};
 
