@@ -6,6 +6,7 @@ declare global {
 		username: string;
 		global_name?: string;
 		avatar?: string;
+		accent_color?: number;
 	}
 
 	interface Member {

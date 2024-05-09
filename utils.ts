@@ -11,3 +11,7 @@ export function env(name: string, fallback?: string) {
 
 	return value;
 }
+
+export function randomColor() {
+	return Bun.nanoseconds() & 0xFFFFFF;
+}

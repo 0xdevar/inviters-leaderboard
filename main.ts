@@ -1,5 +1,5 @@
 import * as api from "./api.ts";
-import { env } from "./utils.ts";
+import { env, randomColor } from "./utils.ts";
 
 
 const GUILD_ID = env("GUILD_ID");
@@ -115,6 +115,10 @@ async function postMessageRandom(template: Template) {
 
 	const renderedTemplate = hydrate(template.template);
 
+	if (template.content) {
+		template.content = hydrate(template.content);
+	}
+
 	const embeds = ((embeds) => {
 		if (!embeds) {
 			return
@@ -122,9 +126,18 @@ async function postMessageRandom(template: Template) {
 
 		hydrateInviterEmbed(member, embeds, renderedTemplate);
 
-
 		return embeds
 	})(template.embeds);
+
+	if (embeds) {
+		const color = member.user.accent_color ?? randomColor();
+		embeds[0].color = color;
+		if (embeds[0].image) {
+			embeds[0].image.url = embeds[0].image?.url
+				.replace("{count}", inviter.membersJoinedCount.toString())
+				.replace("{color}", color.toString(16).padStart(6, "0"))
+		}
+	}
 
 	await api.sendMessage(CHANNEL_ID, template.content, embeds);
 }
