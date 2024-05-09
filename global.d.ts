@@ -4,12 +4,18 @@ declare global {
 	interface User {
 		id: string;
 		username: string;
+		global_name?: string;
+		avatar?: string;
 	}
 
 	interface Member {
 		user: User;
 		code?: string;
 		invitedBy?: string;
+		avatar?: string;
+		nick?: string;
+		joined_at: string;
+		permissions?: string;
 	}
 
 	interface InvitedMember {
@@ -21,6 +27,8 @@ declare global {
 	interface ActualMemberDTO {
 		user: User;
 		joined_at: string;
+		avatar?: string;
+		nick?: string;
 	}
 
 

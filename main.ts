@@ -19,9 +19,20 @@ const GUILD_ID = env("GUILD_ID");
 const CHANNEL_ID = env("CHANNEL_ID");
 const INTERVAL = parseInt(env("POSTING_INTERVAL", "5")) * 1000;
 
+const store: { [key: string]: any } = {};
+
 function discordEndpoint(url: string) {
 	const base = "https://discord.com/api/v9";
 	return `${base}/${url}`;
+}
+
+function discordCdn(url: string) {
+	const cdn = "https://cdn.discordapp.com";
+	return `${cdn}/${url}`
+}
+
+function getMemberAvatar(userId: string, avatarId: string): string {
+	return `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.png`;
 }
 
 function getRandomElementFromArray<T>(array: T[]): undefined | T {
@@ -75,7 +86,9 @@ async function getMembers(guildId: string, limit?: number): Promise<Member[]> {
 			const m = {
 				user: member.member.user,
 				invitedBy: member.inviter_id,
-				code: member.source_invite_code
+				code: member.source_invite_code,
+				avatar: member.member.avatar,
+				nick: member.member.nick
 			} as Member;
 			members.push(m);
 		}
@@ -136,12 +149,9 @@ async function getInvites(guildId: string): Promise<Invite[]> {
 	return invitesOut;
 }
 
-async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<InvitedMember[]> {
+function filterOnlyInvitedMembers(members: Member[], invites: Invite[]): InvitedMember[] {
 	const membersOut = [] as InvitedMember[];
 
-	const invites = await getInvites(guildId);
-
-	const members = await getMembers(guildId, limit);
 
 	function getUserFromInviteFromCode(code: string): undefined | User {
 		return invites.find(invite => invite.code === code)?.user;
@@ -173,6 +183,13 @@ async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<I
 	return membersOut;
 }
 
+async function getInvitedMembersOnly(guildId: string, limit?: number): Promise<[InvitedMember[], Member[]]> {
+	const invites = await getInvites(guildId);
+	const members = await getMembers(guildId, limit);
+
+	return [filterOnlyInvitedMembers(members, invites), members];
+}
+
 function accoumlateInviters(members: InvitedMember[]): InviterMember[] {
 	const invitersMap: { [key: string]: number } = {};
 	const inviterMembers = members.reduce(function(results: InviterMember[], value: InvitedMember) {
@@ -192,14 +209,14 @@ function accoumlateInviters(members: InvitedMember[]): InviterMember[] {
 	return inviterMembers;
 }
 
-async function getTopInviters(guildId: string, max: number): Promise<InviterMember[]> {
-	const members = await getInvitedMembersOnly(guildId);
-	const inviters = accoumlateInviters(members);
+async function getTopInviters(guildId: string, max: number): Promise<[InviterMember[], Member[]]> {
+	const [invitedMembers, members] = await getInvitedMembersOnly(guildId);
+	const inviters = accoumlateInviters(invitedMembers);
 
 	const sortedInviters = inviters.sort((b, a) => a.membersJoinedCount - b.membersJoinedCount);
 
 
-	return sortedInviters.slice(0, max);
+	return [sortedInviters.slice(0, max), members];
 }
 
 
@@ -259,14 +276,20 @@ async function deleteMessage(channelId: string, messageId: string): Promise<void
 	throw new Error(`api error, response is not [204], it was ${response.status}`);
 }
 
-async function getGuildMember(guildId: string, userId: string): Promise<Member> {
+async function getGuildMember(guildId: string, userId: string): Promise<Member | undefined> {
 	const endpoint = discordEndpoint(`/guilds/${guildId}/members/${userId}`)
 
 	const response = await discordHitendpoint(endpoint, "GET");
 
+
+	if (response.status === 404) {
+		return;
+	}
+
 	if (response.status !== 200) {
 		throw new Error(`api error, response is not [200], it was ${response.status}`);
 	}
+
 
 	const o = await response.json();
 
@@ -302,9 +325,7 @@ async function getRandomTemplate(): Promise<Template> {
 
 async function postMessageSeq(template: Template) {
 	const count = template.maxMembersCount ?? 5;
-	const members = (await getTopInviters(GUILD_ID, count))
-		.map(m => ({ ...m, userId: `<@${m.userId}>` }));
-
+	const [members] = (await getTopInviters(GUILD_ID, count))
 
 	const hydrate = (value: string, member: InviterMember) => {
 		return value.replace("{user}", member.userId)
@@ -337,34 +358,78 @@ async function postMessageSeq(template: Template) {
 	sendMessage(CHANNEL_ID, template.content, embeds);
 }
 
+function hydrateInviterEmbed(member: Member, embeds: Embed[], renderedTemplate: string) {
+	const avatarId = member.avatar ?? member.user.avatar ?? "";
+
+	for (const e of embeds) {
+		e.description = e.description?.replace("{template}", renderedTemplate);
+
+
+		if (e.author) {
+			e.author.name = e.author.name.replace("{user}", member.user.global_name ?? "");
+
+			const args: [string, string] = ["{avatar_url}", getMemberAvatar(member.user.id, avatarId)];
+
+			e.author.url = e.author?.url?.replace(...args);
+			e.author.icon_url = e.author?.icon_url?.replace(...args);
+		}
+	}
+}
+
 async function postMessageRandom(template: Template) {
 	const count = template.maxMembersCount ?? 5;
-	const members = (await getTopInviters(GUILD_ID, count))
-		.map(m => ({ ...m, userId: `<@${m.userId}>` }));
+	const [topInviters, members] = (await getTopInviters(GUILD_ID, count));
 
 	const min = (() => {
 		const min = template.min;
-		if (min && min > members[0].membersJoinedCount) {
-			return members[0].membersJoinedCount;
+		if (min && min > topInviters[0].membersJoinedCount) {
+			return topInviters[0].membersJoinedCount;
 		}
 		return template.min;
 	})();
 
-	let member: InviterMember | undefined;
-	do {
-		member = getRandomElementFromArray(members);
-		if (!member) {
-			break;
-		}
-	} while (min && member.membersJoinedCount < min);
+	const [inviter, member]: [InviterMember?, Member?] = (() => {
+		let member: InviterMember | undefined;
+		let guildMember: Member;
 
-	if (!member) {
+
+		do {
+
+			member = getRandomElementFromArray(topInviters);
+
+			if (!member) {
+				console.log("could not find any members", members.length)
+				break;
+			}
+
+			if (store["random.last"] === member.userId) {
+				continue;
+			}
+
+			const m = members.find(m => member?.userId === m.user.id);
+			if (!m) {
+				continue;
+			}
+
+			guildMember = m;
+
+			if (min && member.membersJoinedCount >= min) {
+				return [member, guildMember];
+			}
+		} while (true);
+
+		return [];
+	})();
+
+	if (!member || !inviter) {
 		return;
 	}
 
+	store["random.last"] = inviter.userId;
+
 	const hydrate = (value: string) => {
-		return value.replace("{user}", member.userId)
-			.replace("{count}", member.membersJoinedCount.toString());
+		return value.replace("{user}", inviter.userId)
+			.replace("{count}", inviter.membersJoinedCount.toString());
 	}
 
 	const renderedTemplate = hydrate(template.template);
@@ -373,9 +438,10 @@ async function postMessageRandom(template: Template) {
 		if (!embeds) {
 			return
 		}
-		for (const e of embeds) {
-			e.description = e.description?.replace("{template}", renderedTemplate);
-		}
+
+		hydrateInviterEmbed(member, embeds, renderedTemplate);
+
+
 		return embeds
 	})(template.embeds);
 
@@ -392,10 +458,9 @@ async function postMessageFromRandomTemplate() {
 	}
 }
 
-//	TODO: ensure not to show the same user again
-
 async function mainLoop() {
 	await postMessageFromRandomTemplate();
 }
 
+mainLoop();
 setInterval(mainLoop, INTERVAL);
