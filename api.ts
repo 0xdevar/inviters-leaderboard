@@ -1,4 +1,4 @@
-import { env } from "./utils";
+import { env } from "./utils.ts";
 
 const TOKEN = env("DISCORD_TOKEN");
 

@@ -1,5 +1,5 @@
-import * as api from "./api";
-import { env } from "./utils";
+import * as api from "./api.ts";
+import { env } from "./utils.ts";
 
 
 const GUILD_ID = env("GUILD_ID");

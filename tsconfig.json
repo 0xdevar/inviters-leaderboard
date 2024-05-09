@@ -4,6 +4,7 @@
     "target": "es2017",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "allowImportingTsExtensions": true
   }
 }
