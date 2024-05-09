@@ -7,7 +7,6 @@ function discordEndpoint(url: string) {
 	return `${base}/${url}`;
 }
 
-
 function discordCdn(url: string) {
 	const cdn = "https://cdn.discordapp.com";
 	return `${cdn}/${url}`
@@ -64,7 +63,7 @@ export async function getMembers(guildId: string, limit?: number): Promise<Membe
 				invitedBy: member.inviter_id,
 				code: member.source_invite_code,
 				avatar: member.member.avatar,
-				nick: member.member.nick
+				nick: member.member.nick,
 			} as Member;
 			members.push(m);
 		}
@@ -174,6 +173,7 @@ function accoumlateInviters(members: InvitedMember[]): InviterMember[] {
 			results.push({
 				userId: id,
 				membersJoinedCount: 0,
+				mention: `<@${id}>`
 			} as InviterMember);
 			invitersMap[value.invitedBy] = results.length - 1;
 		}
@@ -205,6 +205,7 @@ export async function sendMessage(channelId: string, content?: string, embeds?: 
 		embeds,
 	};
 
+	console.log(payload)
 	const response = await discordHitendpoint(endpoint, "POST", payload);
 
 	if (![200, 201].includes(response.status)) {

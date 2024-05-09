@@ -109,7 +109,6 @@ async function postMessageRandom(template: Template) {
 		let member: InviterMember | undefined;
 		let guildMember: Member;
 
-
 		do {
 
 			member = getRandomElementFromArray(topInviters);
@@ -145,7 +144,8 @@ async function postMessageRandom(template: Template) {
 	store["random.last"] = inviter.userId;
 
 	const hydrate = (value: string) => {
-		return value.replace("{user}", inviter.userId)
+		return value.replace("{mention}", inviter.mention)
+			.replace("{user}", member.user.global_name ?? member.user.username)
 			.replace("{count}", inviter.membersJoinedCount.toString());
 	}
 

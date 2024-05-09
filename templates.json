@@ -1,17 +1,17 @@
 [
   {
-    "maxMembersCount": 100,
+    "maxMembersCount": 10,
     "min": 5,
-    "type": "random",
-    "template": "{user}",
-    "content": "## : 📝👥 قائمة متصدرين الدعوات",
+    "type": "seq",
+    "template": "{user} {mention}",
+    "content": "This is a content {user} {mention}",
     "embeds": [
       {
-        "title": "my title",
+        "title": "Thank you for your service",
         "type": "rich",
-        "description": "{template}",
+        "description": "> {template}",
         "footer": {
-          "text": "sss",
+          "text": "0x",
           "icon_url": "https://cdn.discordapp.com/icons/942802258528198666/64ee7cadddcb9eac46a09cec3c1867e2.webp?size=4096"
         },
         "author": {

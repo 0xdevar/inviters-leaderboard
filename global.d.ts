@@ -58,6 +58,7 @@ declare global {
 
 	interface InviterMember {
 		userId: string;
+		mention: string;
 		membersJoinedCount: number;
 	}
 
