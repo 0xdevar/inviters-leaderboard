@@ -40,41 +40,6 @@ async function getRandomTemplate(): Promise<Template> {
 	return getRandomElementFromArray(templates)!;
 }
 
-async function postMessageSeq(template: Template) {
-	const count = template.maxMembersCount ?? 5;
-	const [members] = (await api.getTopInviters(GUILD_ID, count))
-
-	const hydrate = (value: string, member: InviterMember) => {
-		return value.replace("{user}", member.userId)
-			.replace("{count}", member.membersJoinedCount.toString());
-	}
-
-
-	const renderTemplates = (() => {
-		const out = [];
-		for (let i = 0; i < count; i++) {
-			const member = members[i];
-			const renderedTemplate = hydrate(template.template, member);
-			out.push(renderedTemplate);
-		}
-		return out.join("\n");
-	});
-
-
-	const embeds = ((embeds) => {
-		if (!embeds) {
-			return
-		}
-		for (const e of embeds) {
-			e.description = e.description?.replace("{template}", renderTemplates);
-		}
-		return embeds
-	})(template.embeds);
-
-
-	api.sendMessage(CHANNEL_ID, template.content, embeds);
-}
-
 function hydrateInviterEmbed(member: Member, embeds: Embed[], renderedTemplate: string) {
 	const avatarId = member.avatar ?? member.user.avatar ?? "";
 
@@ -169,7 +134,8 @@ async function postMessageFromRandomTemplate() {
 	const template = await getRandomTemplate();
 
 	if (template.type === "seq") {
-		return postMessageSeq(template);
+		throw new Error("is not supported yet");
+		// return postMessageSeq(template);
 	} else if (template.type === "random") {
 		return postMessageRandom(template);
 	}
