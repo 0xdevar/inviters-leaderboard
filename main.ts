@@ -142,8 +142,24 @@ async function postMessageRandom(template: Template) {
 	await api.sendMessage(CHANNEL_ID, template.content, embeds);
 }
 
+async function shouldSend(): Promise<boolean> {
+	const messages = await api.getMessages(CHANNEL_ID, {
+		limit: 8
+	});
+
+	const wasOneOfThemFromBot = !!messages.find(m => m.author?.bot);
+
+	return !wasOneOfThemFromBot;
+}
+
 async function postMessageFromRandomTemplate() {
 	const template = await getRandomTemplate();
+
+	if (!await shouldSend()) {
+		console.log(`Skipping ${new Date()}`);
+		return;
+	}
+
 
 	if (template.type === "seq") {
 		throw new Error("is not supported yet");

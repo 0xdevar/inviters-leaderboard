@@ -2,8 +2,12 @@ import { env } from "./utils.ts";
 
 const TOKEN = env("DISCORD_TOKEN");
 
-function discordEndpoint(url: string) {
+function discordEndpoint(url: string, queries?: QueryMap): string {
 	const base = "https://discord.com/api/v9";
+	if (queries) {
+		const q = new URLSearchParams(queries).toString();
+		return `${base}/${url}?${q}`;
+	}
 	return `${base}/${url}`;
 }
 
@@ -250,6 +254,18 @@ export async function deleteMessage(channelId: string, messageId: string): Promi
 	}
 
 	throw new Error(`api error, response is not [204], it was ${response.status}`);
+}
+
+export async function getMessages(channelId: string, query: GetMessagesQuery): Promise<Message[]> {
+	const endpoint = discordEndpoint(`/channels/${channelId}/messages`, query as QueryMap);
+
+	const response = await discordHitendpoint(endpoint, "GET");
+
+	if (response.status !== 200) {
+		throw new Error(`api error, response is not [200], it was ${response.status}`);
+	}
+
+	return await response.json() as Message[];
 }
 
 export async function getGuildMember(guildId: string, userId: string): Promise<Member | undefined> {
