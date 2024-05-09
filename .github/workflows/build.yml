@@ -24,11 +24,11 @@ jobs:
         run: bun i
 
       - name: Build Binary
-        run: bun build --target=bun src/bot.ts --compile --sourcemap --outfile ./build/challenge-bot
+        run: bun build --target=bun main.ts --compile --sourcemap --outfile ./build/inviters-bot
 
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./build/challenge-bot
+          files: ./build/inviters-bot
           tag_name: ${{ env.version }}
