@@ -2,7 +2,7 @@
   {
     "maxMembersCount": 10,
     "min": 5,
-    "type": "seq",
+    "type": "random",
     "template": "{user} {mention}",
     "content": "This is a content {user} {mention}",
     "embeds": [
