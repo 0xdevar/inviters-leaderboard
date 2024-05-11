@@ -62,6 +62,12 @@ async function postMessageRandom(template: Template) {
 	const count = template.maxMembersCount ?? 5;
 	const [topInviters, members] = (await api.getTopInviters(GUILD_ID, count));
 
+	const MEMBERS_KEY = "random.last.members";
+
+	if (!Array.isArray(store[MEMBERS_KEY])) {
+		store[MEMBERS_KEY] = [];
+	}
+
 	const min = (() => {
 		const min = template.min;
 		if (min && min > topInviters[0].membersJoinedCount) {
@@ -82,7 +88,7 @@ async function postMessageRandom(template: Template) {
 				break;
 			}
 
-			if (store["random.last"] === member.userId) {
+			if (store[MEMBERS_KEY].includes(member.userId)) {
 				continue;
 			}
 
@@ -105,7 +111,11 @@ async function postMessageRandom(template: Template) {
 		return;
 	}
 
-	store["random.last"] = inviter.userId;
+	if (store[MEMBERS_KEY].length > 3) {
+		store[MEMBERS_KEY].shift();
+	}
+
+	store[MEMBERS_KEY].push(inviter.userId);
 
 	const hydrate = (value: string) => {
 		return value.replace("{mention}", inviter.mention)
