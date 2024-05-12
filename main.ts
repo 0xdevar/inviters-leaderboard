@@ -1,6 +1,6 @@
 import * as api from "./api.ts";
 import { env, randomColor } from "./utils.ts";
-
+import { VERSION } from "./meta.ts";
 
 const GUILD_ID = env("GUILD_ID");
 const CHANNEL_ID = env("CHANNEL_ID");
@@ -182,6 +182,8 @@ async function postMessageFromRandomTemplate() {
 async function mainLoop() {
 	await postMessageFromRandomTemplate();
 }
+
+console.log(`VERSION: ${VERSION}`);
 
 mainLoop();
 setInterval(mainLoop, INTERVAL);
